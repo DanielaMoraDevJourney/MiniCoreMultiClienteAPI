@@ -1,12 +1,16 @@
-# Build stage
+# Etapa de build
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /app
+WORKDIR /src
 
-COPY . ./
-RUN dotnet restore
-RUN dotnet publish MiniCoreMultiCliente.MiniCore.API.csproj -c Release -o out
+COPY . .
 
-# Runtime stage
+# Restauramos dependencias
+RUN dotnet restore MiniCoreMultiCliente.csproj
+
+# Publicamos el proyecto
+RUN dotnet publish MiniCoreMultiCliente.csproj -c Release -o /app/out
+
+# Etapa de runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/out .
