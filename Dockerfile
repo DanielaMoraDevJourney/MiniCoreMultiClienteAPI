@@ -25,4 +25,4 @@ COPY --from=build /app/publish .
 ENV ASPNETCORE_URLS=http://+:10000
 EXPOSE 10000
 
-ENTRYPOINT ["dotnet", "MiniCoreMultiCliente.MiniCore.API.dll"]
+ENTRYPOINT ["dotnet", "MiniCoreMultiCliente.dll"]
