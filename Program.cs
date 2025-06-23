@@ -15,11 +15,12 @@ builder.Services.AddScoped<IComisionService, ComisionService>();
 // CORS (esto debe ir antes de Build)
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontendDev", policy =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        policy.WithOrigins("http://localhost:3000") // tu frontend local
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
     });
 });
 
@@ -39,7 +40,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // Middleware
-app.UseCors("AllowFrontendDev"); 
+app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
