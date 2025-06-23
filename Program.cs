@@ -15,13 +15,14 @@ builder.Services.AddScoped<IComisionService, ComisionService>();
 // CORS (esto debe ir antes de Build)
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
+    options.AddPolicy("AllowFrontendDev", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.WithOrigins("http://localhost:3000") // tu frontend local
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
 });
+
 
 // Swagger y controladores
 builder.Services.AddControllers();
@@ -38,7 +39,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // Middleware
-app.UseCors(); // <-- esto activa lo configurado arriba
+app.UseCors("AllowFrontendDev"); 
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
