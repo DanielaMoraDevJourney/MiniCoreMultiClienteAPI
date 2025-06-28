@@ -1,52 +1,87 @@
 ﻿
 # MiniCoreMultiCliente.API
 
-Sistema backend en .NET 8 con arquitectura limpia, orientado a la gestión de ventas, comisiones y reglas personalizadas para múltiples clientes. Este sistema permite administrar vendedores, ventas y comisiones aplicando reglas diferenciadas según el cliente.
+Sistema backend desarrollado con **.NET 8** y **arquitectura limpia**, orientado a la **gestión de ventas, comisiones** y reglas personalizadas para múltiples clientes. Permite administrar vendedores, clientes y calcular automáticamente comisiones aplicando estrategias específicas por cliente.
+
+---
 
 ## Arquitectura
 
-Este backend sigue el patrón **Clean Architecture**, estructurado en capas:
+Este proyecto aplica **Clean Architecture**, separando claramente responsabilidades por capa:
 
 ```
 
-MiniCoreMultiCliente.API/
+MiniCoreMultiCliente/
 │
-├── MiniCore.Application         # Lógica de negocio (casos de uso, interfaces de servicio)
-├── MiniCore.Domain              # Entidades y modelos de dominio
-├── MiniCore.Infrastructure      # Implementación de servicios, acceso a datos (DbContext)
-├── MiniCore.API                 # Capa de presentación y controladores
+├── MiniCore.Domain              # Entidades y lógica de negocio pura
+├── MiniCore.Application         # Interfaces, DTOs, servicios, estrategias
+├── MiniCore.Infrastructure      # Repositorios, EF DbContext, implementación
+├── MiniCore.API                 # Controladores REST y configuración
 
 ````
 
-### Patrón MVC adaptado a Clean Architecture
+---
 
-- **Model (Domain + Application)**: Entidades (`Cliente`, `Vendedor`, `Venta`, `ReglaComision`) y lógica de negocio en `Application`.
-- **View (Frontend separado)**: Proyecto React independiente conectado vía API REST.
-- **Controller (API Controllers)**: En `MiniCore.API`, los controladores exponen los endpoints al frontend y orquestan servicios.
+## Patrón MVC (Adaptado a Clean Architecture)
+
+- **Model (Domain + Application)**: Entidades (`Cliente`, `Vendedor`, `Venta`, `ReglaComision`) y lógica de negocio (`ComisionService`, `ReglaComisionEstandar`).
+- **View (Frontend separado)**: Proyecto React conectado vía API REST.
+- **Controller (API Controllers)**: Controladores REST que orquestan servicios y devuelven respuestas.
+
+---
+
+## Buenas prácticas aplicadas
+
+### Principios SOLID
+
+1. **Single Responsibility Principle (SRP)**  
+   - Cada clase tiene una única responsabilidad:  
+     - `ComisionService` calcula comisiones  
+     - `ComisionRepository` accede a datos  
+     - `ReglaComisionEstandar` aplica lógica de negocio pura
+
+2. **Dependency Inversion Principle (DIP)**  
+   - `ComisionService` depende de interfaces (`IComisionRepository`, `IReglaComisionEstrategia`) y no de clases concretas, facilitando pruebas y mantenimiento.
+
+---
+
+### Patrones de Diseño
+
+- **Strategy Pattern**  
+  La lógica de cálculo de comisión se encapsula en `ReglaComisionEstandar`, que implementa `IReglaComisionEstrategia`. Permite cambiar fácilmente cómo se calculan las comisiones.
+
+- **Factory Pattern**  
+  `ReglaComisionFactory` permite seleccionar dinámicamente la estrategia de cálculo según el contexto del cliente.
+
+---
 
 ## Funcionalidades
 
-- Gestión de clientes y vendedores.
-- Registro de ventas por vendedor.
-- Reglas de comisión configurables por cliente.
-- Cálculo automático de comisiones según reglas vigentes.
-- Filtro de ventas por fechas.
-- API REST documentada con Swagger.
+- Gestión de clientes y vendedores
+- Registro de ventas por vendedor
+- Reglas de comisión configurables por cliente
+- Cálculo automático de comisiones por reglas aplicadas
+- Filtro de ventas por fecha
+- API REST documentada con Swagger
+
+---
 
 ## Tecnologías
 
-- **.NET 8**
-- **Entity Framework Core**
-- **SQL Server**
-- **Docker**
-- **Swagger**
-- **Render.com** (despliegue en la nube)
+- .NET 8
+- Entity Framework Core
+- SQL Server
+- Docker
+- Swagger / OpenAPI
+- Render.com para despliegue
+
+---
 
 ## Configuración
 
-### Variables de entorno requeridas
+### Variables de entorno
 
-Asegúrate de definir estas variables en `appsettings.json` o entorno:
+Debes configurar el archivo `appsettings.json` o usar variables del entorno:
 
 ```json
 {
@@ -56,66 +91,80 @@ Asegúrate de definir estas variables en `appsettings.json` o entorno:
 }
 ````
 
+---
+
 ### Ejecución local
 
 ```bash
-# Restaura paquetes y compila
 dotnet restore
 dotnet build
-
-# Ejecuta la API
 dotnet run --project MiniCoreMultiCliente.API
 ```
+
+---
 
 ### Ejecución con Docker
 
 ```bash
-# Build de la imagen
 docker build -t minicore-api .
-
-# Run en localhost
 docker run -d -p 5000:80 minicore-api
 ```
 
+---
+
 ## Endpoints principales
 
-| Método | Ruta                        | Descripción                    |
-| ------ | --------------------------- | ------------------------------ |
-| GET    | /api/clientes               | Listar clientes                |
-| GET    | /api/vendedores             | Listar vendedores              |
-| POST   | /api/ventas                 | Crear nueva venta              |
-| GET    | /api/ventas/por-fechas      | Filtrar ventas por fechas      |
-| GET    | /api/comisiones/{clienteId} | Obtener comisiones por cliente |
+| Método | Ruta                     | Descripción                 |
+| ------ | ------------------------ | --------------------------- |
+| GET    | /api/clientes            | Listar clientes             |
+| POST   | /api/clientes            | Crear cliente               |
+| GET    | /api/vendedores          | Listar vendedores           |
+| POST   | /api/ventas              | Registrar venta             |
+| GET    | /api/ventas/por-fechas   | Ventas filtradas por fechas |
+| POST   | /api/comisiones/calcular | Calcular comisión           |
 
-## Estructura de carpetas
+---
+
+## Estructura de la API
 
 ```bash
 MiniCoreMultiCliente.API
-├── Controllers
-│   └── ClientesController.cs
-│   └── VendedoresController.cs
-│   └── VentasController.cs
+├── Controllers/
+│   ├── ClientesController.cs
+│   ├── VendedoresController.cs
+│   ├── VentasController.cs
 │   └── ComisionesController.cs
 ├── Program.cs
 ├── appsettings.json
 ```
 
-## Mantenimiento y mejoras
+---
 
-* Se pueden extender las reglas de comisión por tipo de producto o meta mensual.
-* Puede integrarse autenticación y autorización por roles.
-* Permite integración con sistemas externos vía webhooks.
+## Mantenimiento y mejoras futuras
+
+* Soporte a reglas por tipo de producto o metas
+* Autenticación y autorización basada en roles
+* Integración con sistemas externos (ej. webhook de pagos)
+* Multitenancy completo a nivel de base de datos
+
+---
 
 ## Proyecto Frontend
 
-El frontend React se encuentra en el repositorio:
+El frontend React que consume esta API se encuentra en:
 
-[MiniCoreMultiCliente.FrontEnd](https://github.com/DanielaMoraDevJourney/MiniCoreMultiCliente.FrontEnd.git)
-[Deploy](https://minicoremulticliente-frontend.onrender.com)
+* **Repositorio GitHub:**
+  [MiniCoreMultiCliente.FrontEnd](https://github.com/DanielaMoraDevJourney/MiniCoreMultiCliente.FrontEnd.git)
+
+* **Deploy en Render:**
+  [https://minicoremulticliente-frontend.onrender.com](https://minicoremulticliente-frontend.onrender.com)
 
 ---
 
 ## Autor
 
-Desarrollado por [Daniela Mora](https://github.com/DanielaMoraDevJourney) como proyecto demostrativo de arquitectura limpia con integración frontend-backend.
+Desarrollado por [Daniela Mora](https://github.com/DanielaMoraDevJourney) como proyecto demostrativo de arquitectura limpia con integración frontend-backend, principios SOLID y patrones de diseño aplicados correctamente.
+
+
+---
 

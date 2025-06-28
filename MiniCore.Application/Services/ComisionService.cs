@@ -1,55 +1,45 @@
-﻿using Microsoft.EntityFrameworkCore;
-using MiniCoreMultiCliente.MiniCore.Application.DTOs;
+﻿using MiniCoreMultiCliente.MiniCore.Application.DTOs;
 using MiniCoreMultiCliente.MiniCore.Application.Interfaces;
-using MiniCoreMultiCliente.MiniCore.Infrastructure.Data;
+using MiniCoreMultiCliente.MiniCore.Domain.Entities;
 
 namespace MiniCoreMultiCliente.MiniCore.Application.Services
 {
-
     public class ComisionService : IComisionService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IComisionRepository _repo;
+        private readonly IReglaComisionFactory _factory;
 
-        public ComisionService(ApplicationDbContext context)
+        public ComisionService(IComisionRepository repo, IReglaComisionFactory factory)
         {
-            _context = context;
+            _repo = repo;
+            _factory = factory;
         }
 
         public async Task<ComisionResponseDto> CalcularComisionAsync(ComisionRequestDto request)
         {
-            var vendedor = await _context.Vendedores
-                .Include(v => v.Cliente)
-                .FirstOrDefaultAsync(v => v.Id == request.VendedorId && v.ClienteId == request.ClienteId);
-
+            var vendedor = await _repo.ObtenerVendedorConClienteAsync(request.VendedorId, request.ClienteId);
             if (vendedor == null)
                 throw new Exception("Vendedor no encontrado para el cliente.");
 
-            var ventas = await _context.Ventas
-                .Where(v => v.VendedorId == request.VendedorId &&
-                            v.Fecha >= request.FechaInicio &&
-                            v.Fecha <= request.FechaFin)
-                .ToListAsync();
-
+            var ventas = await _repo.ObtenerVentasPorVendedorYFechasAsync(request.VendedorId, request.FechaInicio, request.FechaFin);
             if (!ventas.Any())
-                throw new Exception("No se encontraron ventas para este vendedor en el rango de fechas proporcionado.");
+                throw new Exception("No se encontraron ventas.");
 
-            var reglas = await _context.ReglasComision
-                .Where(r => r.ClienteId == request.ClienteId)
-                .ToListAsync();
-
+            var reglas = await _repo.ObtenerReglasPorClienteAsync(request.ClienteId);
             if (!reglas.Any())
-                throw new Exception("No hay reglas de comisión definidas para este cliente.");
+                throw new Exception("No hay reglas de comisión.");
+
+            string tipoCliente = "estandar";
+            var estrategia = _factory.ObtenerEstrategia(tipoCliente);
 
             var detalles = new List<VentaComisionDetalleDto>();
             decimal total = 0;
 
             foreach (var venta in ventas)
             {
-                var regla = reglas.FirstOrDefault(r =>
-                    venta.Monto >= r.MinMonto && venta.Monto <= r.MaxMonto);
+                decimal comision = estrategia.Calcular(venta.Monto, reglas);
+                decimal porcentaje = reglas.FirstOrDefault(r => venta.Monto >= r.MinMonto && venta.Monto <= r.MaxMonto)?.Porcentaje ?? 0;
 
-                decimal porcentaje = regla?.Porcentaje ?? 0;
-                decimal comision = venta.Monto * (porcentaje / 100m);
                 total += comision;
 
                 detalles.Add(new VentaComisionDetalleDto
@@ -70,6 +60,5 @@ namespace MiniCoreMultiCliente.MiniCore.Application.Services
                 Detalles = detalles
             };
         }
-
     }
 }
